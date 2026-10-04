@@ -39,9 +39,11 @@
 
 ## What This Does
 
-<!-- Three or four sentences: what a user asks for, and what they get back. -->
-
-
+FitFindr is an agent that turns a plain-language thrift query into a
+fit card. It searches listings, suggests an outfit using the user's
+wardrobe, and writes a caption. If the search comes back empty it
+stops and says what to change, rather than calling the next tool with
+nothing.
 
 ---
 
