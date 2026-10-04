@@ -37,6 +37,12 @@
 
 <!-- ═══════════════════════ UNIT 3 — THE BUILD ═══════════════════════ -->
 
+**Stretch feature:** A fourth tool, `compare_prices`, which returns up
+to three cheaper alternatives in the same category. The loop calls it
+after selecting the item and stores the result in
+`session["alternatives"]`. It adds a second branch point (the loop
+always checks alternatives, but only when results exist).
+
 ## What This Does
 
 FitFindr is an agent that turns a plain-language thrift query into a
@@ -49,59 +55,87 @@ nothing.
 
 ## Tool Inventory
 
-<!-- Four lines per tool. This is worth 2 points and it's the single most
-     common place students lose them.
+### `search_listings(description, size, max_price)`
 
-     "Returns a list" earns NOTHING. The description has to say what is IN
-     the list.
+**What it does:** Searches the listings file for items matching a
+description, optionally filtered by size and a maximum price, and
+returns the best matches first.
 
-     The empty case isn't optional either — it's the thing your loop branches
-     on, and if you don't decide it here you'll discover it as a crash in
-     Milestone 5. -->
-
-### `search_listings`
-
-- **What it does:**
-- **Inputs:** <!-- name and type each: `max_price` (float), not "a price" -->
-- **Returns:**
-- **When it has nothing:**
-
-### `suggest_outfit`
-
-- **What it does:**
 - **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+  - `description` (str): keywords describing what the user wants.
+  - `size` (str or None): size to filter by, or None to skip.
+  - `max_price` (float or None): price ceiling (inclusive), or None to
+    skip.
+- **Returns:** A list of listing dicts, best match first, at most
+  `config.SEARCH_RESULT_LIMIT` of them. Each dict has all 11 fields
+  (`id`, `title`, `description`, `category`, `style_tags`, `size`,
+  `condition`, `price`, `colors`, `brand`, `platform`).
+- **When it has nothing:** Returns an empty list `[]`. Not `None`, not
+  an exception.
 
-### `create_fit_card`
+### `suggest_outfit(new_item, wardrobe)`
 
-- **What it does:**
+**What it does:** Given a thrifted item and the user's wardrobe,
+suggests one or two outfits that combine the new item with pieces the
+user already owns.
+
 - **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+  - `new_item` (dict): a listing dict — the item the user is
+    considering.
+  - `wardrobe` (dict): a wardrobe dict with an `items` key holding a
+    list. May be empty (`{"items": []}`).
+- **Returns:** A non-empty string with outfit suggestions. When the
+  wardrobe has items, the string names specific pieces the user owns.
+  When empty, it returns general styling advice for the new item.
+- **When it has nothing:** With `wardrobe["items"] == []`, returns
+  general styling advice rather than raising or returning an empty
+  string.
+
+### `create_fit_card(outfit, new_item)`
+
+**What it does:** Writes a short caption someone would actually post
+about the find, in a voice that reads like a real post rather than a
+product description.
+
+- **Inputs:**
+  - `outfit` (str): the outfit suggestion string from
+    `suggest_outfit()`.
+  - `new_item` (dict): the listing dict for the item.
+- **Returns:** A two-to-four sentence caption that mentions the item,
+  its price, and its platform once each, and is specific about the
+  vibe.
+- **When it has nothing:** If `outfit` is empty or whitespace-only,
+  returns a descriptive message rather than raising.
+
+### `compare_prices(new_item)` — STRETCH
+
+**What it does:** Looks through the listings for cheaper items in the
+same category as the selected item, so the user can see alternatives
+before committing.
+
+- **Inputs:**
+  - `new_item` (dict): a listing dict — the item the user is
+    considering.
+- **Returns:** A list of up to 3 listing dicts from the same category,
+  all cheaper than `new_item`, sorted cheapest first.
+- **When it has nothing:** Returns an empty list `[]`.
 
 ---
 
 ## Planning Loop
 
-<!-- Your branch rule, stated as a rule — the condition AND both paths — plus
-     the file and function that holds it.
-
-     Like this:
-       "If search_listings returns an empty list, put a message in the session
-        and stop. Otherwise take the first result and go to suggest_outfit."
-        — agent.py::run_agent
-
-     The grader checks your code against what you claim here, so the file and
-     function have to be real. -->
-
-**Branch rule:**
+**Branch rule:** If `search_listings` returns `[]`, set `session["error"]`
+and stop. Otherwise select the first result, check for cheaper
+alternatives (stretch), then call `suggest_outfit` and `create_fit_card`.
 
 **Where it lives:** `agent.py::run_agent`
 
-**How the query is parsed:** <!-- regex, string splitting, or asking the model — say which -->
+**How the query is parsed:** Regex. `under $N` → `max_price`, `size X` → `size`,
+remainder → `description`.
 
-**What moves through the session:** <!-- which fields, in what order -->
+**What moves through the session:** `query` → `parsed` → `search_results` →
+`selected_item` → `alternatives` (stretch) → `outfit_suggestion` →
+`fit_card`. On empty search: `error` set, later fields `None`.
 
 ---
 
