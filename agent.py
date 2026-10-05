@@ -13,11 +13,11 @@ Build and test your three tools in `tools.py` first. Then come here.
     python agent.py          runs both example paths below
 """
 
+import re
 import config
 import trace
-from tools import search_listings, suggest_outfit, create_fit_card
+from tools import search_listings, suggest_outfit, create_fit_card, compare_prices
 from generate import ModelUnavailable
-
 
 # ── session state ─────────────────────────────────────────────────────────────
 
@@ -40,6 +40,7 @@ def new_session(query: str, wardrobe: dict) -> dict:
         "parsed": {},                # description / size / max_price you pulled out of it
         "search_results": [],        # everything search_listings returned
         "selected_item": None,       # the one you chose — goes into suggest_outfit
+        "alternatives": [],
         "wardrobe": wardrobe,        # the user's wardrobe
         "outfit_suggestion": None,   # what suggest_outfit returned
         "fit_card": None,            # what create_fit_card returned
@@ -48,6 +49,23 @@ def new_session(query: str, wardrobe: dict) -> dict:
 
 
 # ── planning loop ─────────────────────────────────────────────────────────────
+
+def parse_query(query: str) -> dict:
+    """Extract description, size, and max_price from a plain-language query."""
+    price_match = re.search(r"under\s+\$?(\d+(?:\.\d+)?)", query, re.IGNORECASE)
+    size_match = re.search(r"size\s+([A-Za-z0-9/]+)", query, re.IGNORECASE)
+
+    desc = query
+    for m in [price_match, size_match]:
+        if m:
+            desc = desc[:m.start()] + desc[m.end():]
+    desc = re.sub(r"\s+", " ", desc).strip(" ,.")
+
+    return {
+        "description": desc,
+        "size": size_match.group(1) if size_match else None,
+        "max_price": float(price_match.group(1)) if price_match else None,
+    }
 
 def run_agent(query: str, wardrobe: dict) -> dict:
     """
@@ -106,9 +124,48 @@ def run_agent(query: str, wardrobe: dict) -> dict:
         than a stack trace. The import is already at the top of this file.
     """
     session = new_session(query, wardrobe)
+    session["parsed"] = parse_query(query)
+    count = 0
+    trace.check_iterations(count)
+    session["search_results"] = search_listings(
+        description=session["parsed"]["description"],
+        size=session["parsed"]["size"],
+        max_price=session["parsed"]["max_price"],
+    )
 
-    # TODO: delete these two lines and build the loop.
-    session["error"] = "The planning loop isn't built yet — see the TODO in agent.py."
+    if not session["search_results"]:
+        p = session["parsed"]
+        hints = []
+        if p["size"] is not None:
+            hints.append(f"try a different size (you asked for {p['size']})")
+        if p["max_price"] is not None:
+            hints.append(f"raise your price ceiling (${p['max_price']})")
+        hints.append("use fewer keywords in your description")
+        session["error"] = (
+            f"No listings matched '{p['description']}'. Try one of: "
+            + "; ".join(hints) + "."
+        )
+        return session
+
+    session["selected_item"] = session["search_results"][0]
+
+    # STRETCH: find cheaper alternatives in the same category
+    count += 1
+    trace.check_iterations(count)
+    session["alternatives"] = compare_prices(session["selected_item"])
+
+    count += 1
+    trace.check_iterations(count)
+    session["outfit_suggestion"] = suggest_outfit(
+        session["selected_item"], session["wardrobe"]
+    )
+
+    count += 1
+    trace.check_iterations(count)
+    session["fit_card"] = create_fit_card(
+        session["outfit_suggestion"], session["selected_item"]
+    )
+
     return session
 
 

@@ -123,18 +123,20 @@ before committing.
 
 ## Planning Loop
 
-**Branch rule:** If `search_listings` returns `[]`, set `session["error"]`
-and stop. Otherwise select the first result, check for cheaper
-alternatives (stretch), then call `suggest_outfit` and `create_fit_card`.
+**Branch rule:** If `search_listings` returns `[]`, set
+`session["error"]` and stop. Otherwise select the first result, check
+for cheaper alternatives with `compare_prices` (stretch), then call
+`suggest_outfit` and `create_fit_card`.
 
 **Where it lives:** `agent.py::run_agent`
 
-**How the query is parsed:** Regex. `under $N` → `max_price`, `size X` → `size`,
-remainder → `description`.
+**How the query is parsed:** Regex in `agent.py::parse_query`.
+`under $N` → `max_price`, `size X` → `size`, remainder → `description`.
 
-**What moves through the session:** `query` → `parsed` → `search_results` →
-`selected_item` → `alternatives` (stretch) → `outfit_suggestion` →
-`fit_card`. On empty search: `error` set, later fields `None`.
+**What moves through the session:** `query` → `parsed` →
+`search_results` → `selected_item` → `alternatives` (stretch) →
+`outfit_suggestion` → `fit_card`. On empty search: `error` is set and
+later fields stay `None`.
 
 ---
 
@@ -149,6 +151,37 @@ remainder → `description`.
 
 ```
 $ python app.py ask '...'
+% python agent.py
+=== A query the data can match ===
+  found:    Y2K Baby Tee — Butterfly Print — $18.0 on depop
+  outfit:   Here are two distinct outfit combinations using your new Y2K Butterfly
+  Print Baby Tee and pieces from your wardrobe:
+
+### Outfit 1: Effortless Y2K Streetwear (Casual & Edgy)
+This look plays on the classic early-2000s silhouette by pairing the fitted baby tee with slouchy, baggy denim, layered with cozy outerwear and chunky footwear.
+
+*   **Top 1:** Y2K Butterfly Print Baby Tee
+*   **Outerwear:** Vintage black denim jacket (worn over the baby tee, or draped over the shoulders)
+*   **Bottoms:** Baggy straight-leg jeans (dark wash)
+*   **Accessories:** Brown leather belt + Black crossbody bag
+*   **Shoes:** Chunky white sneakers
+
+### Outfit 2: Model-Off-Duty Contrast (Sporty & Chic)
+This outfit contrasts the ultra-feminine, fitted butterfly tee with relaxed, tailored khaki trousers and tough combat boots, pulling the look together with a cropped layering piece.
+
+*   **Top 1:** Y2K Butterfly Print Baby Tee
+*   **Top 2 (Layering piece):** Black cropped zip hoodie (left open to show off the baby tee graphic)
+*   **Bottoms:** Wide-leg khaki trousers
+*   **Accessories:** Black crossbody bag (skip the belt to keep the waistline clean with the hoodie)
+*   **Shoes:** Black combat boots
+  fit card: Living out my ultimate 2000s pop star dreams in this Y2K Butterfly Print Baby Tee 🦋✨ Grabbed this absolute gem for just $18.00 over on my Depop and I’m already obsessed. Honestly debating keeping it, but she needs a good home!
+
+=== A query it can't ===
+  stopped: No listings matched 'designer ballgown'. Try one of: try a different size (you asked for XXS); raise your price ceiling ($5.0); use fewer keywords in your description.
+  fit_card is None — it should still be None here
+
+The second one should stop before the fit card. If both paths look the same,
+the branch isn't doing anything yet.
 
 ```
 
