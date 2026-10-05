@@ -19,13 +19,16 @@ type, exactly what it returns, and what it returns when it has nothing to give.
 That last line is what your loop branches on. "Returns a list" earns nothing —
 the description has to say what is *in* the list.
 """
+import re
 
 import config  # noqa: F401 — you'll use this in search_listings
 from generate import generate
 from utils.data_loader import load_listings
 
-
 # ── Tool 1: search_listings ───────────────────────────────────────────────────
+
+def _tokens(text):
+    return set(re.split(r"[^a-z0-9]+", text.lower())) - {""}
 
 def search_listings(
     description: str,
@@ -78,9 +81,19 @@ def search_listings(
     Test it from a terminal before you move on:
         python -c "from tools import search_listings; print(search_listings('graphic tee', max_price=30))"
     """
-    # TODO: replace this with your implementation
-    return []
-
+    results = []
+    query = _tokens(description)
+    for l in load_listings():
+        if max_price is not None and l["price"] > max_price:
+            continue
+        if size is not None and size.lower() not in _tokens(l["size"]):
+            continue
+        text = f"{l['title']} {l['description']} {l['category']} {' '.join(l['style_tags'])}"
+        score = len(query & _tokens(text))
+        if score:
+            results.append((score, l))
+    results.sort(key=lambda x: -x[0])
+    return [l for _, l in results[:config.SEARCH_RESULT_LIMIT]]
 
 # ── Tool 2: suggest_outfit ────────────────────────────────────────────────────
 
@@ -112,9 +125,23 @@ def suggest_outfit(new_item: dict, wardrobe: dict) -> str:
     Test it from a terminal before you move on:
         python -c "from tools import suggest_outfit; from utils.data_loader import get_example_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_example_wardrobe()))"
     """
-    # TODO: replace this with your implementation
-    return ""
 
+    items = wardrobe.get("items", [])
+    if not items:
+        prompt = (
+            f"Suggest two general outfits for this thrifted item:\n"
+            f"{new_item['title']} — ${new_item['price']} on {new_item['platform']}\n"
+            f"Be specific about the vibe and what pairs well."
+        )
+    else:
+        owned = "\n".join(f"- {i['name']} ({i['category']})" for i in items)
+        prompt = (
+            f"Suggest two outfits combining this new item:\n"
+            f"{new_item['title']} — ${new_item['price']} on {new_item['platform']}\n"
+            f"With pieces the user already owns:\n{owned}\n"
+            f"Name the specific pieces you are using."
+        )
+    return generate(prompt)
 
 # ── Tool 3: create_fit_card ───────────────────────────────────────────────────
 
@@ -152,5 +179,28 @@ def create_fit_card(outfit: str, new_item: dict) -> str:
     Test it from a terminal before you move on:
         python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
     """
-    # TODO: replace this with your implementation
-    return ""
+
+    if not outfit or not outfit.strip():
+        return "No outfit available — try a different item or add pieces to your wardrobe."
+    prompt = (
+        f"Write a 2-4 sentence social media caption about this thrifted find.\n"
+        f"Item: {new_item['title']}\n"
+        f"Price: ${new_item['price']}\n"
+        f"Platform: {new_item['platform']}\n"
+        f"Outfit: {outfit}\n\n"
+        f"Mention the item, price, and platform once each. Read like a real post, not a product description."
+    )
+    return generate(prompt)
+
+# ── Tool 4: compare_prices, stretch ───────────────────────────────────────────────────
+
+def compare_prices(new_item):
+    """Return up to 3 cheaper alternatives in the same category."""
+    same_cat = [
+        l for l in load_listings()
+        if l["category"] == new_item["category"]
+        and l["price"] < new_item["price"]
+        and l["id"] != new_item["id"]
+    ]
+    same_cat.sort(key=lambda x: x["price"])
+    return same_cat[:3]

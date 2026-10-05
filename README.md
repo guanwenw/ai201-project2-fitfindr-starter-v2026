@@ -37,12 +37,6 @@
 
 <!-- ═══════════════════════ UNIT 3 — THE BUILD ═══════════════════════ -->
 
-**Stretch feature:** A fourth tool, `compare_prices`, which returns up
-to three cheaper alternatives in the same category. The loop calls it
-after selecting the item and stores the result in
-`session["alternatives"]`. It adds a second branch point (the loop
-always checks alternatives, but only when results exist).
-
 ## What This Does
 
 FitFindr is an agent that turns a plain-language thrift query into a
@@ -50,6 +44,11 @@ fit card. It searches listings, suggests an outfit using the user's
 wardrobe, and writes a caption. If the search comes back empty it
 stops and says what to change, rather than calling the next tool with
 nothing.
+
+**Stretch feature:** A fourth tool, `compare_prices(new_item)`, which
+returns up to three cheaper alternatives in the same category as the
+selected item. The loop calls it after choosing the item and stores the
+result in `session["alternatives"]`.
 
 ---
 
@@ -158,15 +157,54 @@ $ python app.py ask '...'
 ```
 $ python -c "from tools import search_listings; print(search_listings('graphic tee', max_price=30))"
 
+[{'id': 'lst_002', 'title': 'Y2K Baby Tee — Butterfly Print', 'description': 'Super cute early 2000s baby tee with butterfly graphic. Fitted crop length. Tag says medium but fits like a small.', 'category': 'tops', 'style_tags': ['y2k', 'vintage', 'graphic tee', 'cottagecore'], 'size': 'S/M', 'condition': 'excellent', 'price': 18.0, 'colors': ['white', 'pink', 'purple'], 'brand': None, 'platform': 'depop'}, {'id': 'lst_006', 'title': 'Graphic Tee — 2003 Tour Bootleg Style', 'description': 'Vintage-style bootleg tee with faded graphic. Slightly boxy fit. 100% cotton, soft and worn-in.', 'category': 'tops', 'style_tags': ['graphic tee', 'vintage', 'grunge', 'streetwear', 'band tee'], 'size': 'L', 'condition': 'good', 'price': 24.0, 'colors': ['black'], 'brand': None, 'platform': 'depop'}, {'id': 'lst_017', 'title': 'Mesh Long-Sleeve Top — Black', 'description': 'Sheer black mesh long-sleeve. Great for layering under a graphic tee or over a bralette. Stretchy material, fits true to size.', 'category': 'tops', 'style_tags': ['y2k', 'grunge', 'goth', 'layering'], 'size': 'S/M', 'condition': 'excellent', 'price': 15.0, 'colors': ['black'], 'brand': None, 'platform': 'depop'}, {'id': 'lst_033', 'title': 'Vintage Band Tee — Faded Grey', 'description': 'Faded grey band-style tee with distressed graphic. Crew neck. Fits boxy. Well-loved but no holes or major damage.', 'category': 'tops', 'style_tags': ['vintage', 'grunge', 'band tee', 'graphic tee', 'streetwear'], 'size': 'L', 'condition': 'fair', 'price': 19.0, 'colors': ['grey', 'charcoal'], 'brand': None, 'platform': 'depop'}, {'id': 'lst_011', 'title': 'Low-Rise Cargo Pants — Khaki', 'description': 'Y2K era low-rise cargo pants. Lots of pockets. Khaki color, slightly distressed at the hems. Great for layering with a long tee.', 'category': 'bottoms', 'style_tags': ['y2k', 'cargo', '2000s', 'streetwear'], 'size': 'W29', 'condition': 'fair', 'price': 27.0, 'colors': ['khaki', 'tan'], 'brand': None, 'platform': 'poshmark'}, {'id': 'lst_015', 'title': 'Vintage Graphic Hoodie — Faded Black', 'description': 'Faded black pullover hoodie with barely-visible vintage graphic on the chest. Cozy interior. Some pilling but adds to the worn-in look.', 'category': 'tops', 'style_tags': ['vintage', 'grunge', 'graphic', 'streetwear'], 'size': 'L', 'condition': 'fair', 'price': 26.0, 'colors': ['black', 'charcoal'], 'brand': None, 'platform': 'depop'}]
+
 ```
 
 ```
 $ python -c "from tools import suggest_outfit; ..."
 
+% python -c "from tools import suggest_outfit; from utils.data_loader import get_example_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_example_wardrobe()))"
+
+Here are two distinct outfit combinations using the new Vintage Levi's 501 Jeans and pieces from your existing wardrobe:
+
+### Outfit 1: Casual & Layered (Streetwear Vibe)
+This look plays with proportions by pairing the structured, medium-wash 501s with relaxed layers, adding contrast and texture with black accessories.
+
+*   **New Item:** Vintage Levi's 501 Jeans (Medium Wash)
+*   **Top:** White ribbed tank top + Oversized grey crewneck sweatshirt (layer the sweatshirt over the tank, or drape it over your shoulders)
+*   **Outerwear:** Vintage black denim jacket
+*   **Shoes:** Chunky white sneakers
+*   **Accessories:** Black crossbody bag
+
+### Outfit 2: Edgy & Defined (Off-Duty Cool)
+This combination tucks in a fitted top to highlight the high waist of the 501s, pulling in the waist with a belt and grounding the look with heavier footwear and outerwear.
+
+*   **New Item:** Vintage Levi's 501 Jeans (Medium Wash)
+*   **Top:** Black cropped zip hoodie
+*   **Shoes:** Black combat boots
+*   **Accessories:** Brown leather belt + Black crossbody bag
+
 ```
 
 ```
 $ python -c "from tools import create_fit_card; ..."
+
+% AI201_CACHE=0 python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
+
+AI201_CACHE=0 python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
+
+AI201_CACHE=0 python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
+Nothing beats the fit of a truly broken-in pair of vintage Levi's 501 jeans, especially paired with fresh white sneakers for that effortless everyday look. Scoring these medium wash beauties for just $38.00 on Depop was an absolute steal. Grab them before I change my mind and keep them forever!
+Nothing beats the perfect vintage fit, especially when it’s a classic pair of Levi's 501 jeans in that ideal medium wash. Paired with my go-to white sneakers, this is literally my everyday uniform. Snagged these for just $38.0 over on depop and I am never taking them off!
+Nothing beats the fit of broken-in denim, and these vintage Levi's 501 jeans in the absolute best medium wash are living proof. Paired with my go-to white sneakers, this is my ultimate effortless weekend uniform. Snagged them for just $38.0 on depop before someone else beat me to it!
+
+```
+
+```
+% python -c "from tools import compare_prices; from utils.data_loader import load_listings; print(compare_prices(load_listings()[0]))"
+
+[{'id': 'lst_026', 'title': 'Biker Shorts — Black, Shiny', 'description': 'Shiny black biker shorts in a slightly glossy material. High-waisted. Y2K-coded. Can be styled athletic or fashion.', 'category': 'bottoms', 'style_tags': ['y2k', 'athletic', 'streetwear', '2000s'], 'size': 'S', 'condition': 'excellent', 'price': 14.0, 'colors': ['black'], 'brand': None, 'platform': 'depop'}, {'id': 'lst_016', 'title': 'High-Waisted Denim Shorts — Cutoff', 'description': "DIY cutoff denim shorts from Levi's 501s. Raw hem, slightly frayed. High-waisted. Perfect summer length.", 'category': 'bottoms', 'style_tags': ['vintage', 'denim', 'summer', 'classic'], 'size': 'W27', 'condition': 'good', 'price': 24.0, 'colors': ['light blue', 'blue'], 'brand': "Levi's", 'platform': 'poshmark'}, {'id': 'lst_011', 'title': 'Low-Rise Cargo Pants — Khaki', 'description': 'Y2K era low-rise cargo pants. Lots of pockets. Khaki color, slightly distressed at the hems. Great for layering with a long tee.', 'category': 'bottoms', 'style_tags': ['y2k', 'cargo', '2000s', 'streetwear'], 'size': 'W29', 'condition': 'fair', 'price': 27.0, 'colors': ['khaki', 'tan'], 'brand': None, 'platform': 'poshmark'}]
 
 ```
 
