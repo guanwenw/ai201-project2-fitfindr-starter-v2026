@@ -45,10 +45,9 @@ wardrobe, and writes a caption. If the search comes back empty it
 stops and says what to change, rather than calling the next tool with
 nothing.
 
-**Stretch feature:** A fourth tool, `compare_prices(new_item)`, which
-returns up to three cheaper alternatives in the same category as the
-selected item. The loop calls it after choosing the item and stores the
-result in `session["alternatives"]`.
+## Stretch feature
+
+A fourth tool, `compare_prices(new_item)`, which returns up to three cheaper alternatives in the same category as the selected item. The loop calls it after choosing the item and stores the result in `session["alternatives"]`.
 
 ---
 
@@ -245,24 +244,29 @@ Nothing beats the fit of broken-in denim, and these vintage Levi's 501 jeans in 
 
 ## How I Used AI
 
-<!-- Two specific moments. What you asked, what came back, what you changed.
-
-     "I used Claude to help me code" is not enough.
-
-     "I gave Claude my search_listings spec. It returned None on no match
-     instead of an empty list, so I changed it" is the level we want. -->
-
 **Moment 1**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* I ask Claude for an initial implementation of `search_listings` with size filtering.
+- *What came back:* a substring match using
+  `size.lower() in listing["size"].lower()`.
+- *What I changed:* Milestone 1 data inspection showed sizes such as `"W30
+  L30"` and `"XL (oversized)"`, where substring matching produces false
+  positives (`"l" in "xl"`, `"s" in "us 9"`). I replaced the substring
+  test with a tokenized comparison: both sides are split on
+  non-alphanumeric boundaries and matched on whole tokens. `"M"` now
+  matches `"M"` and `"S/M"` but not `"W30 L30"`.
 
 **Moment 2**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* I ask Claude for a prompt for `create_fit_card` that would yield a
+  social-media caption.
+- *What came back:* a prompt referencing the item title and style tags but
+  omitting price and platform.
+- *What I changed:* Criterion 4 requires both fields to appear in the caption,
+  so I added explicit instructions to mention price and platform once
+  each. I also constrained the output to two-to-four sentences and
+  specified a register ("reads like a real post, not a product
+  description") to match the tool specification.
 
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
