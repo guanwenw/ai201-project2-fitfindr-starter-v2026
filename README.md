@@ -337,34 +337,49 @@ that produced it:
 
 ## Loop Trace
 
-<!-- One full run, printed step by step, with the MCP call visible in it.
+Produced by `agent.py::run_agent` with `python app.py ask '...' --trace`.
 
-     `python app.py ask '...' --trace` once you've added the trace.step()
-     calls in Milestone 2.
-
-     Worth pasting BOTH the happy path and the empty-search path. The empty
-     one should be visibly shorter, because it stops. If your two traces are
-     the same length, your branch isn't working — and this is the fastest way
-     anyone will ever find that out. -->
-
-**Happy path**
+**Happy path — One full run**
 
 ```
-
+$ python app.py ask 'vintage graphic tee under $30' --trace
+[1] search_listings (via MCP)
+      in:  dict with keys: description, size, max_price
+      out: 10 items: Y2K Baby Tee — Butterfly Print, Graphic Tee — 2003 Tour Bootleg Style, Vintage Band Tee — Faded Grey … +7 more
+[2] compare_prices
+      in:  dict with keys: new_item
+      out: 3 items: Mesh Long-Sleeve Top — Black, Henley Long Sleeve — Washed Burgundy, Tie-Dye Long Sleeve — Pastel
+[3] suggest_outfit
+      in:  dict with keys: new_item, wardrobe_items
+      out: Here are two distinct outfit combinations using your new Y2K Butterfly Print Baby Tee and pieces from your war…
+[4] create_fit_card
+      in:  dict with keys: new_item, outfit_len
+      out: Living out my ultimate 2000s pop star dreams in this Y2K Butterfly Print Baby Tee 🦋✨ Grabbed this absolute gem…
 ```
 
-**Empty search**
+**Empty search — branch stops**
 
 ```
+$ python app.py ask 'designer ballgown size XXS under $5' --trace
+[1] search_listings (via MCP)
+      in:  dict with keys: description, size, max_price
+      out: [] (empty)
+[2] branch
+      →    empty search, stopping before suggest_outfit
 
+  No listings matched 'designer ballgown'. Try one of: try a different size (you asked for XXS); raise your price ceiling ($5.0); use fewer keywords in your description.
+
+0 model calls this session
 ```
 
-**On the MCP move:** <!-- what changed in your code, and whether anything
-behaved differently afterwards. If the rewire didn't work, say exactly where it
-broke — the error text and the last thing that worked. That earns the point in
-full. -->
-
-
+**On the MCP move:** `search_listings` was moved onto the MCP server in
+Milestone 1. `agent.py::run_agent` now calls it via
+`mcp_client.call_tool("search_listings", {...})` instead of the direct
+import. The return value is unchanged — same list of listing dicts — so
+nothing downstream behaved differently. The step name in the trace marks
+it as `search_listings (via MCP)` so the MCP call is visible among the
+direct calls to `compare_prices`, `suggest_outfit`, and
+`create_fit_card`.
 
 ---
 
