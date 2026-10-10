@@ -335,33 +335,36 @@ try 5: completed — fit card 254 chars
 
 ## Verdicts and Diagnoses
 
-<!-- MET or MISSED per criterion against LAST UNIT's target, plus a sentence on
-     how you decided.
-
-     Then, for every miss: which of the four places it happened — a tool, the
-     loop's branch, the session, or the model's output — AND the mechanism.
-
-     Not a diagnosis:  "The fit card was bad."
-     A diagnosis:      "The fit card criterion missed on 2 of 5 items. Both had
-                        an empty brand field. My prompt puts the brand in the
-                        first sentence, so the card opened with a blank and read
-                        like a fragment. The tool worked; the prompt assumed a
-                        field that isn't always there."
-
-     Look for a pattern. Three misses on the same tool is one problem, not
-     three. -->
-
 | # | Criterion | Target | Verdict | How I decided |
 |---|---|---|---|---|
-| 1 |  |  |  |  |
-| 2 |  |  |  |  |
-| 3 |  |  |  |  |
-| 4 |  |  |  |  |
-| 5 |  |  |  |  |
+| 1 | Full three-tool run returns a fit card | 4 of 5 | MET | 5/5 tries completed with a fit card. Target was 4 of 5; actual was 5/5. |
+| 2 | Empty search stops before tool 2 | 5 of 5 | MET | 5/5 tries stopped early with a useful message. Target was 5 of 5; actual was 5/5. |
+| 3 | Item in session matches item passed on | 5 of 5 | MET | In all 5 tries `session["selected_item"]["id"]` equalled the id of the first result in `session["search_results"]`. Target was 5 of 5; actual was 5/5. |
+| 4 | Fit card mentions price + platform, 3 differ | 3 of 5 | MET | All 5 fit cards mentioned both price and platform, and all 5 differed from each other word-for-word. Target was 3 of 5; actual was 5/5. |
+| 5 | Agent responds within 30 seconds | 4 of 5 | MET | All 5 tries completed. The `[rate limit]` pauses in the log are the starter pacing against the API rate limit, not latency in the agent — the brief calls them out as expected. |
 
 **Diagnoses**
 
+No criterion missed. Per the brief, the finding is that two of my
+targets were set below the system's actual performance:
 
+- **Criterion 1** was set at 4 of 5 and came out 5/5 in every try. A
+  target of 4 of 5 cannot distinguish an agent that works from one that
+  mostly works — it would have passed even if one query failed. I would
+  tighten it to 5 of 5.
+- **Criterion 5** was set at 4 of 5 and came out 5/5 in every try. The
+  same argument applies: the only reason to allow one failure on a
+  latency target is if the agent is occasionally slow, and there is no
+  evidence of that here. I would tighten it to 5 of 5.
+
+Criteria 2, 3 and 4 were already at their strictest values (5 of 5,
+5 of 5, 3 of 5) and all passed. Criterion 4's 3 of 5 is not a loose
+target — it is the honest allowance for model non-determinism, and
+raising it to 5 of 5 would be measuring randomness, not the system.
+
+There is no pipeline stage to diagnose because no criterion failed.
+The failure mode this unit asks about — a tool, the loop's branch, the
+session, or the model's output — did not occur in any of the 25 tries.
 
 ---
 
