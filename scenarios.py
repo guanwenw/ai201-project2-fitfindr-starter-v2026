@@ -47,6 +47,29 @@ SCENARIOS = [
     # For a fit-card criterion, you probably want the SAME query listed more
     # than once, or several different items, depending on what your criterion
     # actually says.
+    {
+        # Normal query, used to check session state.
+        "name": "state carries the item through",
+        "query": "90s track jacket in size M",
+        "wardrobe": "example",
+        "criterion": 3,
+    },
+    {
+        # Same query run five times by run_eval.py gives five fit cards.
+        # Criterion 4 checks that each mentions price and platform, and that
+        # at least three of the five differ word-for-word.
+        "name": "fit card mentions price and platform",
+        "query": "vintage graphic tee under $30",
+        "wardrobe": "example",
+        "criterion": 4,
+    },
+    {
+        # Normal query used to measure latency.
+        "name": "latency within 30 seconds",
+        "query": "denim jacket under $50",
+        "wardrobe": "example",
+        "criterion": 5,
+    },
 ]
 
 WARDROBES = ("example", "empty")
