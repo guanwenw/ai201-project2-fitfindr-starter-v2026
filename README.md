@@ -274,6 +274,21 @@ Nothing beats the fit of broken-in denim, and these vintage Levi's 501 jeans in 
   specified a register ("reads like a real post, not a product
   description") to match the tool specification.
 
+**Moment 3 — Unit 4: the trace and the branch**
+
+- *What I asked for:* I asked an AI to look at my trace output for the
+  `impossible query` scenario, where the agent stops before
+  `suggest_outfit`, and tell me whether the trace was missing anything
+  that would make the branch less visible to a reader.
+- *What came back:* It pointed out that the trace showed the retry
+  step and the branch step but not the reason the retry was triggered
+  — a reader could see `retry (relaxed)` with `dropped_size=XXS` but
+  wouldn't know the first search had returned zero.
+- *What I changed:* I added the `note=` argument to the retry step, so
+  the trace now says "first search returned 0; dropped size=XXS" on
+  the retry line itself. The trace is longer by one line and much
+  easier to read on its own.
+
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
      Don't fill these in during unit 3.
@@ -507,9 +522,32 @@ criterion 5 honest rather than generous.
 
 ## What's Still Broken
 
-<!-- For each criterion still missed: what you'd do, and why you stopped where
-     you did. "I ran out of time" is fine if it's true. Pretending nothing is
-     left is not. -->
+Nothing is broken in the agent after the improvement. All five criteria
+are MET in both the before and after runs. There is no miss to
+diagnose, so the call here is about targets rather than fixes.
+
+Two of my targets are still looser than the system's actual
+performance:
+
+- **Criterion 1** (target 4 of 5, actual 5/5 in both runs). A target of
+  4 of 5 cannot distinguish a working agent from one that mostly works
+  — it would have passed even if one query failed. I would tighten it
+  to 5 of 5 in the next unit.
+- **Criterion 5** (target 4 of 5, actual 5/5 in both runs). The
+  improvement cut total tokens by 43%, so latency has more margin now
+  than it did before. A 5 of 5 target on criterion 5 is realistic.
+
+The other three criteria (2, 3, 4) are already at their strictest
+honest values. Criterion 2 and 3 are mechanical checks — either the
+branch fired or it didn't, either the id matched or it didn't — and
+5 of 5 is the only honest target for both. Criterion 4's 3 of 5 is the
+correct allowance for model non-determinism, not a loose target;
+raising it would be measuring randomness rather than the system.
+
+Why I stopped where I did: the brief forbids changing more than one
+thing in this unit, and my one change was the prompt rewrite. Tightening
+criterion 1 and 5 belongs in the next unit as a criterion revision,
+not as a second change to the system here.
 
 
 
