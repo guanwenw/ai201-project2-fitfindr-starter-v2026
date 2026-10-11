@@ -42,6 +42,7 @@ def new_session(query: str, wardrobe: dict) -> dict:
         "search_results": [],        # everything search_listings returned
         "selected_item": None,       # the one you chose — goes into suggest_outfit
         "alternatives": [],
+        "relaxed_note": None,
         "wardrobe": wardrobe,        # the user's wardrobe
         "outfit_suggestion": None,   # what suggest_outfit returned
         "fit_card": None,            # what create_fit_card returned
@@ -137,6 +138,25 @@ def run_agent(query: str, wardrobe: dict) -> dict:
                inputs=session["parsed"],
                returned=session["search_results"])
 
+    # STRETCH B: retry with looser constraints if size filtered everything out
+    if not session["search_results"] and session["parsed"]["size"] is not None:
+        dropped = session["parsed"]["size"]
+        session["search_results"] = call_tool("search_listings", {
+            "description": session["parsed"]["description"],
+            "size": None,
+            "max_price": session["parsed"]["max_price"],
+        })
+        trace.step("retry (relaxed)",
+                   inputs={"dropped_size": dropped, "size": None,
+                           "max_price": session["parsed"]["max_price"]},
+                   returned=session["search_results"],
+                   note=f"first search returned 0; dropped size={dropped}")
+        if session["search_results"]:
+            session["relaxed_note"] = (
+                f"No matches with size {dropped}; widened the search to any size."
+            )
+            trace.step("note", note=session["relaxed_note"])
+
     if not session["search_results"]:
         p = session["parsed"]
         hints = []
@@ -149,7 +169,7 @@ def run_agent(query: str, wardrobe: dict) -> dict:
             f"No listings matched '{p['description']}'. Try one of: "
             + "; ".join(hints) + "."
         )
-        trace.step("branch", note="empty search, stopping before suggest_outfit")
+        trace.step("branch", note="empty search after retry, stopping before suggest_outfit")
         return session
 
     session["selected_item"] = session["search_results"][0]

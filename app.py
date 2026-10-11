@@ -117,6 +117,9 @@ def _ask_one(query, wardrobe, use_trace):
     if session["error"]:
         print(f"  {session['error']}")
     else:
+        if session.get("relaxed_note"):
+            print(f"  Note: {session['relaxed_note']}")
+            print()
         item = session["selected_item"] or {}
         print(f"  Found:    {item.get('title')} — ${item.get('price')} on {item.get('platform')}")
         print()

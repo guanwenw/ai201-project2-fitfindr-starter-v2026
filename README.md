@@ -49,6 +49,12 @@ nothing.
 
 A fourth tool, `compare_prices(new_item)`, which returns up to three cheaper alternatives in the same category as the selected item. The loop calls it after choosing the item and stores the result in `session["alternatives"]`.
 
+**Stretch feature — retry with looser constraints:** If `search_listings`
+returns an empty list and the query included a `size` filter, the loop
+retries once with the size filter dropped. If the retry finds matches,
+the run continues normally and the session records a note saying what
+was dropped.
+
 ---
 
 ## Tool Inventory
@@ -414,34 +420,87 @@ it as `search_listings (via MCP)` so the MCP call is visible among the
 direct calls to `compare_prices`, `suggest_outfit`, and
 `create_fit_card`.
 
+**Retry**
+
+
+```
+% python app.py ask 'vintage graphic tee under $30 size XXS' --trace
+[1] search_listings (via MCP)
+      in:  dict with keys: description, size, max_price
+      out: [] (empty)
+[2] retry (relaxed)
+      in:  dict with keys: dropped_size, size, max_price
+      out: 10 items: Y2K Baby Tee — Butterfly Print, Graphic Tee — 2003 Tour Bootleg Style, Mesh Long-Sleeve Top — Black … +7 more
+      →    first search returned 0; dropped size=XXS
+[3] note
+      →    No matches with size XXS; widened the search to any size.
+[4] compare_prices
+      in:  dict with keys: new_item
+      out: 3 items: Mesh Long-Sleeve Top — Black, Henley Long Sleeve — Washed Burgundy, Tie-Dye Long Sleeve — Pastel
+[5] suggest_outfit
+      in:  dict with keys: new_item, wardrobe_items
+      out: **Outfit 1: Effortless Streetwear** A casual, edgy look perfect for everyday errands. *Pieces: Y2K butterfly b…
+[6] create_fit_card
+      in:  dict with keys: new_item, outfit_len
+      out: Channeling major 2000s pop star energy with this Y2K butterfly baby tee, yours on Depop for just $18! Whether …
+
+  Note: No matches with size XXS; widened the search to any size.
+
+  Found:    Y2K Baby Tee — Butterfly Print — $18.0 on depop
+
+  Outfit:   **Outfit 1: Effortless Streetwear**
+A casual, edgy look perfect for everyday errands.
+*Pieces: Y2K butterfly baby tee, baggy straight-leg dark wash jeans, black cropped zip hoodie, chunky white sneakers, and black crossbody bag.*
+
+**Outfit 2: Retro Contrast**
+A balanced mix of sporty-chic and relaxed vintage elements.
+*Pieces: Y2K butterfly baby tee, wide-leg khaki trousers, vintage black denim jacket, chunky white sneakers, and brown leather belt.*
+
+  Fit card: Channeling major 2000s pop star energy with this Y2K butterfly baby tee, yours on Depop for just $18! Whether you’re styling it with baggy denim for everyday errands or dressing it down with wide-leg trousers, this piece is an absolute closet staple. Run, don't walk! 🦋✨
+
+0 model calls this session, 2 served from cache
+```
+
 ---
 
 ## The Improvement
 
-<!-- What you changed, why your diagnosis pointed at it, and the after-run in
-     the same table format. One change, measured properly.
+**What I changed:** I rewrote the `suggest_outfit` prompt to cap each
+outfit at two sentences — a one-line vibe and a one-line list of
+pieces — instead of letting the model produce long paragraphs.
 
-     `python run_eval.py --label after` -->
-
-**What I changed:**
-
-**Which failure it was meant to fix:**
+**Which failure it was meant to fix:** No criterion missed in the
+before run, but two targets (criterion 1 at 4 of 5 and criterion 5 at
+4 of 5) came out 5/5 in every try. The diagnosis was that the agent
+was clearing the targets with room to spare, and the reason was
+verbosity: `suggest_outfit` was producing 600+ token responses, which
+pushed both latency and prompt size up. Shortening the outfit prompt
+should tighten the latency margin and make a 5 of 5 target on
+criterion 5 honest rather than generous.
 
 ### Run Log — After
 
 | Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
 |---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+| 1. Full three-tool run returns a fit card | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET |
+| 2. Empty search stops before tool 2 | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET |
+| 3. Item in session matches item passed on | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET |
+| 4. Fit card mentions price + platform, 3 differ | 3 of 5 | PASS | PASS | PASS | PASS | PASS | MET |
+| 5. Agent responds within 30 seconds | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET |
 
-**Did it help, and how do I know:**
+**Did it help, and how do I know:** Yes — the token counts dropped
+sharply and nothing broke.
 
-<!-- If it made things worse, say that. Honestly reported, that earns full
-     credit and is more interesting than one that worked. -->
+| Metric | Before | After | Change |
+|---|---|---|---|
+| Prompt tokens (50 calls) | 12,757 | 8,270 | **-35%** |
+| Output tokens (50 calls) | 9,640 | 4,503 | **-53%** |
+| Total tokens | 22,397 | 12,773 | **-43%** |
 
+All five criteria are still MET. The outfit text is now two sentences
+per outfit (a vibe line and a pieces line) instead of several
+paragraphs. Latency per try is lower, which makes a 5 of 5 target on
+criterion 5 honest rather than generous.
 
 
 ---

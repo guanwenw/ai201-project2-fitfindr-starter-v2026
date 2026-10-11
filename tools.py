@@ -127,11 +127,15 @@ def suggest_outfit(new_item: dict, wardrobe: dict) -> str:
     """
 
     items = wardrobe.get("items", [])
+    brevity = (
+        "Keep each outfit to two sentences: a one-line vibe, "
+        "then a one-line list of pieces. Do not write long paragraphs."
+    )
     if not items:
         prompt = (
             f"Suggest two general outfits for this thrifted item:\n"
             f"{new_item['title']} — ${new_item['price']} on {new_item['platform']}\n"
-            f"Be specific about the vibe and what pairs well."
+            f"Be specific about the vibe and what pairs well. {brevity}"
         )
     else:
         owned = "\n".join(f"- {i['name']} ({i['category']})" for i in items)
@@ -139,7 +143,7 @@ def suggest_outfit(new_item: dict, wardrobe: dict) -> str:
             f"Suggest two outfits combining this new item:\n"
             f"{new_item['title']} — ${new_item['price']} on {new_item['platform']}\n"
             f"With pieces the user already owns:\n{owned}\n"
-            f"Name the specific pieces you are using."
+            f"Name the specific pieces you are using. {brevity}"
         )
     return generate(prompt)
 
